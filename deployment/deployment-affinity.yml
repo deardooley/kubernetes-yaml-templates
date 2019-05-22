@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: affinity
+  labels:
+    app: nfs-test
+spec:
+  replicas: 7
+  selector:
+    matchLabels:
+      app: nfs-test
+  template:
+    metadata:
+      labels:
+        app: nfs-test
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - nfs-test
+              topologyKey: "kubernetes.io/hostname"
+      volumes:
+        - name: brainstorm
+          persistentVolumeClaim:
+            claimName: cfazioli-nfs-pvc
+      containers:
+        - name: nfs-test
+          image: centos:latest
+          command:
+            - "bash"
+            - "-c"
+            - |-
+              yum update;
+              yum install -y tree;
+
+              curl -sk -o /random_tree_gen.sh https://gist.githubusercontent.com/deardooley/712adf3b3fe3ca435d170173132bde9c/raw/695ce8f61773bceb35128eb2b9b252883b9c9c25/random_tree_gen.sh;
+              chmod +x /random_tree_gen.sh;
+
+              cd /nfs-test
+
+              time /random_tree_gen.sh -o $HOSTNAME --width 8 --depth 5 --max_dirs 2 --max_files 5  --min_size 5000000 --max_size 250000000;
+
+              echo "Removing file tree...";
+              for i in $(ls $HOSTNAME); do
+                echo -e "$HOSTNAME/$i \n $(time rm -rf $HOSTNAME/$i)\n";
+              done;
+
+              echo "Removing test root...";
+              time rm -rf $HOSTNAME;
+
+              sleep 60
+
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+          - mountPath: /nfs-test
+            name: brainstorm
+            subPath: rdooley/nfs-test
+      restartPolicy: Always
