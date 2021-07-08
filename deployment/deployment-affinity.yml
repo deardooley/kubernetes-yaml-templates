@@ -25,9 +25,9 @@ spec:
                       - nfs-test
               topologyKey: "kubernetes.io/hostname"
       volumes:
-        - name: brainstorm
+        - name: nfs
           persistentVolumeClaim:
-            claimName: cfazioli-nfs-pvc
+            claimName: nfs-pvc
       containers:
         - name: nfs-test
           image: centos:latest
@@ -57,7 +57,7 @@ spec:
 
           imagePullPolicy: IfNotPresent
           volumeMounts:
-          - mountPath: /nfs-test
-            name: brainstorm
+          - name: nfs
+            mountPath: /nfs-test
             subPath: rdooley/nfs-test
       restartPolicy: Always
